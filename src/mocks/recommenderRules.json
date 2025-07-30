@@ -1,0 +1,37 @@
+[
+    {
+        "component": "algorithm",
+        "type": "popular",
+        "filters": [],
+        "limit": null,
+        "items": "",
+        "categories": null,
+        "save_sort": false,
+        "trending_products_period": "",
+        "also_bought_period": "168",
+        "most_active_period": "0",
+        "most_active_event": [
+            "view"
+        ]
+    },
+    {
+        "component": "action",
+        "value": "asdadadsd",
+        "type": "set_title",
+        "url": null
+    },
+    {
+        "component": "condition",
+        "yes": [],
+        "no": [],
+        "value": [
+            [
+                {
+                    "type": "products_in_the_cart",
+                    "value": "yes",
+                    "operator": "equal"
+                }
+            ]
+        ]
+    }
+]

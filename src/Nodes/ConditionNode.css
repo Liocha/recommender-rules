@@ -1,0 +1,20 @@
+.slide-in-right {
+    position: absolute;
+    right: -80px;
+    top: 50%;
+    transform: translateY(-50%);
+    transition: right 0.3s ease;
+  }
+  
+  .card:hover .slide-in-right {
+    right: 50px;
+  }
+
+  .condition-node .card {
+    border: 2px solid #2f8ae3;
+    background: #2f8ae3
+  }
+
+  .condition-node:hover .card{
+    background: white !important
+  }

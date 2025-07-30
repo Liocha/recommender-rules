@@ -1,0 +1,29 @@
+.start-node {
+
+    height: 50px;
+    border: 2px solid #adb5bd;
+    border-radius: 50px;
+    background-color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    font-size: 1.2rem;
+    color: #adb5bd;
+  }
+  
+  .arrow-icon i {
+    font-size:20px;
+    color: #adb5bd;
+    font-weight: bold;
+  }
+  
+  .bottom-handle {
+    background: #adb5bd;
+    width: 10px;
+    height: 10px;
+    bottom: -5px;
+  }
+
+  
+  
