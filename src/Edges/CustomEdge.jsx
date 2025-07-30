@@ -1,17 +1,29 @@
 import {
     EdgeLabelRenderer,
-    getStraightPath,
+    getSmoothStepPath,
     useReactFlow,
+    BaseEdge,
   } from 'reactflow';
   
-  export default function CustomEdge({ id, sourceX, sourceY, targetX, targetY }) {
+  export default function CustomEdge({
+    id,
+    sourceX,
+    sourceY,
+    targetX,
+    targetY,
+    sourcePosition,
+    targetPosition,
+  }) {
     const { setEdges } = useReactFlow();
   
-    const [edgePath, labelX, labelY] = getStraightPath({
+    const [edgePath, labelX, labelY] = getSmoothStepPath({
       sourceX,
       sourceY,
       targetX,
       targetY,
+      sourcePosition,
+      targetPosition,
+      borderRadius: 0, // можно поставить >0 для мягких углов
     });
   
     return (
@@ -33,14 +45,12 @@ import {
           </defs>
         </svg>
   
-        {/* Линия с использованием markerEnd */}
-        <path
+        {/* Линия со стрелкой */}
+        <BaseEdge
           id={id}
-          d={edgePath}
-          fill="none"
-          stroke="#868e96"
-          strokeWidth={2}
+          path={edgePath}
           markerEnd="url(#arrow)"
+          style={{ stroke: '#868e96', strokeWidth: 2 }}
         />
   
         {/* Кнопка удаления */}
