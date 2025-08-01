@@ -1,20 +1,25 @@
 .slide-in-right {
-    position: absolute;
-    right: -80px;
-    top: 50%;
-    transform: translateY(-50%);
-    transition: right 0.3s ease;
-  }
-  
-  .card:hover .slide-in-right {
-    right: 50px;
-  }
+  position: absolute;
+  right: -80px;
+  top: 50%;
+  transform: translateY(-50%);
+  transition: right 0.3s ease;
+}
 
-  .algorithm-node .card {
-    border: 2px solid #c145d7;
-    background: #c145d7
-  }
+.algorithm-node {
+  width: 180px;
+  height: 90px;
+}
 
-  .algorithm-node:hover .card{
-    background: white !important
-  }
+.card:hover .slide-in-right {
+  right: 50px;
+}
+
+.algorithm-node .card {
+  border: 2px solid #c145d7;
+  background: #c145d7
+}
+
+.algorithm-node:hover .card {
+  background: white !important
+}

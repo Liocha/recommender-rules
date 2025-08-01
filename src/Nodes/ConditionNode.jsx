@@ -26,8 +26,8 @@ export default function ConditionNode({ data }) {
         </div>
       </div>
 
-      <Handle type="source" position="bottom" id="yes" style={{ left: '0%' }} className="bottom-handle" />
-      <Handle type="source" position="bottom" id="no" style={{ left: '100%' }} className="bottom-handle" />
+      <Handle type="source" position="left" id="yes" style={{ left: '0%' }} className="bottom-handle" />
+      <Handle type="source" position="right" id="no" style={{ left: '100%' }} className="bottom-handle" />
     </div>
   );
 }

@@ -1,20 +1,25 @@
 .slide-in-right {
-    position: absolute;
-    right: -80px;
-    top: 50%;
-    transform: translateY(-50%);
-    transition: right 0.3s ease;
-  }
-  
-  .card:hover .slide-in-right {
-    right: 50px;
-  }
+  position: absolute;
+  right: -80px;
+  top: 50%;
+  transform: translateY(-50%);
+  transition: right 0.3s ease;
+}
 
-  .action-node .card {
-    border: 2px solid #35c25e;
-    background: #35c25e
-  }
+.action-node {
+  width: 180px;
+  height: 70px;
+}
 
-  .action-node:hover .card{
-    background: white !important
-  }
+.card:hover .slide-in-right {
+  right: 50px;
+}
+
+.action-node .card {
+  border: 2px solid #35c25e;
+  background: #35c25e
+}
+
+.action-node:hover .card {
+  background: white !important
+}

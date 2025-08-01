@@ -6,6 +6,11 @@
     transition: right 0.3s ease;
   }
   
+  .condition-node {
+    width: 200px;
+    height: 100px;
+  }
+
   .card:hover .slide-in-right {
     right: 50px;
   }

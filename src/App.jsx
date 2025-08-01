@@ -1,50 +1,21 @@
-import React, { useState, useMemo } from 'react';
-import { ReactFlow, Background, MiniMap, Controls, MarkerType } from 'reactflow';
+import React, { useState, useEffect } from 'react';
+import { ReactFlow, Background, MiniMap, Controls } from 'reactflow';
 import 'reactflow/dist/style.css';
-import dagre from 'dagre';
+
 import ActionNode from './Nodes/ActionNode';
 import AlgorithmNode from './Nodes/AlgorithmNode';
 import ConditionNode from './Nodes/ConditionNode';
-import { SettingsImportModal } from './Components/SettingsImportModal';
-import CustomEdge from './Edges/CustomEdge';
 import StartnNode from './Nodes/StartNode';
 
+import CustomEdge from './Edges/CustomEdge';
+import CustomEdge2 from './Edges/CustomEdge2';
 
-const dagreGraph = new dagre.graphlib.Graph();
-dagreGraph.setDefaultEdgeLabel(() => ({}));
+import LayoutSettings from './Components/LayoutSettings';
+import PresetSelector from './Components/PresetSelector';
+import { SettingsImportModal } from './Components/SettingsImportModal';
 
-const nodeWidth = 180;
-const nodeHeight = 100;
-
-function getLayoutedElements(nodes, edges, direction = 'TB') {
-  dagreGraph.setGraph({
-    rankdir: direction,
-    nodesep: 200,  // ширина между нодами
-    ranksep: 200, // высота между уровнями (по направлению потока)
-
-  });
-
-  nodes.forEach((node) => {
-    dagreGraph.setNode(node.id, { width: nodeWidth, height: nodeHeight });
-  });
-
-  edges.forEach((edge) => {
-    dagreGraph.setEdge(edge.source, edge.target);
-  });
-
-  dagre.layout(dagreGraph);
-
-  const layoutedNodes = nodes.map((node) => {
-    const { x, y } = dagreGraph.node(node.id);
-    return {
-      ...node,
-      position: { x, y },
-      style: { width: nodeWidth, height: nodeHeight },
-    };
-  });
-
-  return { nodes: layoutedNodes, edges };
-}
+import { getDagreLayout } from './utils/layoutDagre';
+import { getCustomLayout } from './utils/layoutCustom';
 
 const nodeTypes = {
   action: ActionNode,
@@ -54,60 +25,74 @@ const nodeTypes = {
 };
 
 const edgeTypes = {
+  default: undefined,
   'custom-edge': CustomEdge,
+  'custom-edge-2': CustomEdge2,
 };
 
 function App() {
-
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
-  const handleImport = (jsonString) => {
+  const [layoutConfig, setLayoutConfig] = useState({
+    layoutAlgorithm: 'dagre',
+    rankdir: 'TB',
+    nodesep: 200,
+    ranksep: 200,
+  });
+
+  const [edgeTypeVariant, setEdgeTypeVariant] = useState('custom-edge'); // 'default', 'custom-edge', 'custom-edge-2'
+
+  const [rawNodes, setRawNodes] = useState([
+    { id: '1', type: 'start', data: { label: 'Start' }, position: { x: 0, y: 0 } },
+    { id: '2', type: 'action', data: { label: 'Node 2' }, position: { x: 0, y: 0 } },
+    { id: '3', type: 'algorithm', data: { label: 'Node 3' }, position: { x: 0, y: 0 } },
+  ]);
+
+  const [rawEdges, setRawEdges] = useState([
+    { id: 'e1-2', type: 'custom-edge', source: '1', target: '2' },
+    { id: 'e2-3', type: 'custom-edge', source: '2', target: '3' },
+  ]);
+
+  const [nodes, setNodes] = useState([]);
+  const [edges, setEdges] = useState([]);
+
+  useEffect(() => {
+    const layouted = layoutConfig.layoutAlgorithm === 'dagre'
+      ? getDagreLayout(rawNodes, rawEdges, layoutConfig)
+      : getCustomLayout(rawNodes, rawEdges, layoutConfig);
+
+    // Заменяем тип ребер на выбранный
+    const updatedEdges = layouted.edges.map(edge => ({
+      ...edge,
+      type: edgeTypeVariant === 'default' ? undefined : edgeTypeVariant,
+    }));
+
+    setNodes(layouted.nodes);
+    setEdges(updatedEdges);
+  }, [rawNodes, rawEdges, layoutConfig, edgeTypeVariant]);
+
+  const handleImport = (json) => {
     try {
-      const rules = jsonString;
-      const { newNodes, newEdges } = transformJsonToFlowElements(rules);
-      setNodes(newNodes);
-      setEdges(newEdges);
+      const { newNodes, newEdges } = transformJsonToFlowElements(json);
+      setRawNodes(newNodes);
+      setRawEdges(newEdges);
       setIsImportModalOpen(false);
     } catch (error) {
       console.error('Ошибка импорта:', error);
     }
   };
 
-  function transformJsonToFlowElementsOld(steps) {
-    const newNodes = steps.map((step, index) => {
-      const id = (index + 1).toString();
-      const value = step.value;
-      const nodeType = step.component; // 'action' или 'algorithm' или condition
-      const type = step.type;
-      return {
-        id,
-        type: nodeType,
-        data: { value, type },
-        position: { x: 0, y: 0 }, // вычисляется через dagre
-      };
-    });
-
-    const newEdges = steps.slice(1).map((_, index) => {
-      const source = (index + 1).toString();
-      const target = (index + 2).toString();
-      return {
-        id: `e${source}-${target}`,
-        source,
-        target,
-        type: 'custom-edge',
-      };
-    });
-
-    console.dir({ newNodes, newEdges });
-    return { newNodes, newEdges };
-  }
-
+  const handlePresetSelect = (preset) => {
+    const { newNodes, newEdges } = transformJsonToFlowElements(preset);
+    setRawNodes(newNodes);
+    setRawEdges(newEdges);
+  };
 
   function transformJsonToFlowElements(steps) {
     const nodes = [];
     const edges = [];
 
-    // Стартовая нода
+    // Добавляем стартовую ноду
     nodes.push({
       id: 'start',
       type: 'start',
@@ -115,15 +100,12 @@ function App() {
       position: { x: 0, y: 0 },
     });
 
-    let prevId = 'start';
-    let idCounter = 1;
-
-    function generateId() {
-      return (idCounter++).toString();
+    function sanitize(text) {
+      return text.replace(/[^a-zA-Z0-9_]/g, '_');
     }
 
-    function addStep(step, parentId, handleId = null) {
-      const currentId = generateId();
+    function addStep(step, parentId, idPath, sourceHandle = null) {
+      const currentId = sanitize(idPath);
 
       nodes.push({
         id: currentId,
@@ -140,33 +122,36 @@ function App() {
         id: `e${parentId}-${currentId}`,
         source: parentId,
         target: currentId,
-        sourceHandle: handleId, // 👈 используем yes/no для condition
-        type: 'custom-edge',
+        sourceHandle,
+        type: edgeTypeVariant,
       });
 
-      // если это condition — обрабатываем yes и no отдельно
       if (step.component === 'condition') {
-        addSequentialSteps(step.yes, currentId, 'yes');
-        addSequentialSteps(step.no, currentId, 'no');
+        const yesFirstId = addSequentialSteps(step.yes, currentId, 'yes', `${idPath}_yes`);
+        const noFirstId = addSequentialSteps(step.no, currentId, 'no', `${idPath}_no`);
       }
-
 
       return currentId;
     }
 
-    function addSequentialSteps(stepsArray, initialParentId, handleId = null) {
-
+    function addSequentialSteps(stepsArray, initialParentId, sourceHandle = null, basePath = '') {
       let parentId = initialParentId;
-  
+
       stepsArray.forEach((step, index) => {
-        const currentId = addStep(step, parentId, index === 0 ? handleId : null);
+        const idPath = `${basePath}${index}`;
+        const currentId = addStep(step, parentId, idPath, index === 0 ? sourceHandle : null);
         parentId = currentId;
       });
+
+      return stepsArray.length > 0 ? `${basePath}0` : null;
     }
 
-    steps.forEach((step) => {
-      const newId = addStep(step, prevId);
-      prevId = newId;
+    // 🔧 Основной линейный поток
+    let parentId = 'start';
+    steps.forEach((step, index) => {
+      const idPath = `n${index}`;
+      const currentId = addStep(step, parentId, idPath);
+      parentId = currentId;
     });
 
     return { newNodes: nodes, newEdges: edges };
@@ -174,35 +159,49 @@ function App() {
 
 
 
-
-  const [nodes, setNodes] = useState([
-    { id: '1', type: 'start', data: { label: 'Start' } },
-    { id: '2', type: 'action', data: { label: 'Node 2' } },
-    { id: '3', type: 'algorithm', data: { label: 'Node 3' } },
-    { id: '4', data: { label: 'Node 4' } },
-    { id: '5', data: { label: 'Node 5' } },
-  ]);
-
-  const [edges, setEdges] = useState([
-    { id: 'e1-2', type: 'custom-edge', source: '1', target: '2' },
-    { id: 'e2-3', type: 'custom-edge', source: '2', target: '3' },
-    { id: 'e3-4', type: 'custom-edge', source: '3', target: '4' },
-    { id: 'e4-5', type: 'custom-edge', source: '4', target: '5' },
-  ]);
-
-  const { nodes: layoutedNodes, edges: layoutedEdges } = useMemo(() => getLayoutedElements(nodes, edges), [nodes, edges]);
-
   return (
-    <div style={{ width: '100%', height: 1000 }}>
-      <button
-        onClick={() => setIsImportModalOpen(true)}
-        style={importButtonStyle}
-      >
-        Импорт настроек
-      </button>
+    <div style={{ width: '100%', height: 1200 }}>
+      <div className="position-absolute top-0 start-0 mt-2 ms-2 d-flex flex-column gap-2" style={{ width: '260px', zIndex: 10 }}>
+        {/* Импорт */}
+        <div className="card shadow-sm">
+          <div className="card-body p-3">
+            <h6 className="card-title mb-2 text-muted">Импорт</h6>
+            <button
+              className="btn btn-sm btn-primary w-100"
+              onClick={() => setIsImportModalOpen(true)}
+            >
+              <i className="bi bi-upload me-2" />
+              Импорт настроек
+            </button>
+          </div>
+        </div>
+
+        {/* Настройки */}
+        <LayoutSettings config={layoutConfig} onChange={setLayoutConfig} />
+
+        {/* Варианты эйджа */}
+        <div className="card shadow-sm">
+          <div className="card-body p-3">
+            <h6 className="card-title mb-2 text-muted">Тип ребра</h6>
+            <select
+              className="form-select form-select-sm"
+              value={edgeTypeVariant}
+              onChange={(e) => setEdgeTypeVariant(e.target.value)}
+            >
+              <option value="default">По умолчанию</option>
+              <option value="custom-edge">Кастомный</option>
+              <option value="custom-edge-2">Кастомный 2</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Пресеты */}
+        <PresetSelector onSelect={handlePresetSelect} />
+      </div>
+
       <ReactFlow
-        nodes={layoutedNodes}
-        edges={layoutedEdges}
+        nodes={nodes}
+        edges={edges}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
         fitView
@@ -223,15 +222,3 @@ function App() {
 }
 
 export default App;
-
-const importButtonStyle = {
-  position: 'absolute',
-  top: '10px',
-  left: '10px',
-  zIndex: 10,
-  padding: '8px 16px',
-  backgroundColor: '#fff',
-  border: '1px solid #ddd',
-  borderRadius: '4px',
-  cursor: 'pointer'
-};
